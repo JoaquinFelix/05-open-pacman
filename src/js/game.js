@@ -230,7 +230,22 @@ function collides( a, b ) {
   return Math.abs( a.x - b.x ) < 0.5 && Math.abs( a.y - b.y ) < 0.5;
 }
 
+// Avanza el ciclo scatter/chase un frame.
+function advanceMode( game ) {
+  const phase = SCATTER_CHASE[ game.modeIndex ];
+  game.modeTimer++;
+  if ( game.modeTimer >= phase.dur ) {
+    game.modeIndex++;
+    game.modeTimer = 0;
+    // Ultimo tramo (dur: Infinity) se queda en chase para siempre.
+    if ( game.modeIndex < SCATTER_CHASE.length ) {
+      game.mode = SCATTER_CHASE[ game.modeIndex ].mode;
+    }
+  }
+}
+
 function update( game ) {
+  advanceMode( game );
   movePacman( game );
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
