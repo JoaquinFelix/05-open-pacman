@@ -13,6 +13,24 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 
+// Ciclo arcade simplificado de fases. dur en frames (requestAnimationFrame).
+const SCATTER_CHASE = [
+  { mode: 'scatter', dur: 420 },
+  { mode: 'chase',   dur: 1020 },
+  { mode: 'scatter', dur: 420 },
+  { mode: 'chase',   dur: 1020 },
+  { mode: 'scatter', dur: 300 },
+  { mode: 'chase',   dur: Infinity },
+];
+
+// Objetivos de scatter: esquina de cada fantasma.
+const SCATTER_TARGETS = {
+  blinky: { x: 25, y: 0 },  // superior derecha
+  pinky:  { x: 2,  y: 0 },  // superior izquierda
+  inky:   { x: 27, y: 30 }, // inferior derecha
+  clyde:  { x: 0,  y: 30 }, // inferior izquierda
+};
+
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
 function createGame() {
@@ -29,6 +47,10 @@ function createGame() {
     lives: 3,
     dotsRemaining: dots,
     grid,
+    // Fase scatter/chase: se controla con el ciclo SCATTER_CHASE en update().
+    mode: SCATTER_CHASE[ 0 ].mode,
+    modeIndex: 0,
+    modeTimer: 0,
     pacman: {
       x: PACMAN_START.x,
       y: PACMAN_START.y,
@@ -110,35 +132,68 @@ function movePacman( game ) {
   wrapTunnel( p, width );
 }
 
+// Objetivo del fantasma segun su kind y la fase actual (scatter/chase).
+function targetFor( game, g ) {
+  const p = game.pacman;
+  const px = Math.round( p.x );
+  const py = Math.round( p.y );
+
+  if ( game.mode === 'scatter' ) return SCATTER_TARGETS[ g.kind ];
+
+  const d = DIRS[ p.dir ];
+
+  if ( g.kind === 'blinky' ) {
+    return { x: px, y: py };
+  }
+
+  if ( g.kind === 'pinky' ) {
+    // 4 celdas delante de Pacman en su direccion actual.
+    return { x: px + 4 * d.x, y: py + 4 * d.y };
+  }
+
+  if ( g.kind === 'inky' ) {
+    // Punto 2 celdas delante de Pacman; vector desde Blinky doblado.
+    const ax = px + 2 * d.x;
+    const ay = py + 2 * d.y;
+    const blinky = game.ghosts.find( ( gh ) => gh.kind === 'blinky' );
+    const bx = blinky ? Math.round( blinky.x ) : px;
+    const by = blinky ? Math.round( blinky.y ) : py;
+    return { x: ax + ( ax - bx ), y: ay + ( ay - by ) };
+  }
+
+  // clyde: persigue si esta lejos, si no vuelve a su esquina scatter.
+  const gx = Math.round( g.x );
+  const gy = Math.round( g.y );
+  const manhattan = Math.abs( gx - px ) + Math.abs( gy - py );
+  if ( manhattan > 8 ) return { x: px, y: py };
+  return SCATTER_TARGETS.clyde;
+}
+
+// Elige direccion que minimiza la distancia Manhattan al objetivo.
+// Sin girar 180 salvo callejon sin salida.
 function decideGhost( game, g ) {
   const grid = game.grid;
-  const p = game.pacman;
 
   const options = Object.keys( DIRS ).filter(
     ( dir ) => dir !== OPPOSITE[ g.dir ] && canMove( grid, g.x, g.y, dir, 'ghost' )
   );
   // Sin salida (callejon): permitir el giro de 180.
-  const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
+  const choices = options.length ? options : [ OPPOSITE[ g.dir ] ];
 
-  if ( g.kind === 'hunter' ) {
-    const px = Math.round( p.x );
-    const py = Math.round( p.y );
-    let best = choices[ 0 ];
-    let bestDist = Infinity;
-    for ( const dir of choices ) {
-      const d = DIRS[ dir ];
-      const nx = g.x + d.x;
-      const ny = g.y + d.y;
-      const dist = Math.abs( nx - px ) + Math.abs( ny - py );
-      if ( dist < bestDist ) {
-        bestDist = dist;
-        best = dir;
-      }
+  const target = targetFor( game, g );
+  let best = choices[ 0 ];
+  let bestDist = Infinity;
+  for ( const dir of choices ) {
+    const d = DIRS[ dir ];
+    const nx = g.x + d.x;
+    const ny = g.y + d.y;
+    const dist = Math.abs( nx - target.x ) + Math.abs( ny - target.y );
+    if ( dist < bestDist ) {
+      bestDist = dist;
+      best = dir;
     }
-    g.dir = best;
-  } else {
-    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
   }
+  g.dir = best;
 }
 
 function moveGhost( game, g ) {
@@ -175,7 +230,22 @@ function collides( a, b ) {
   return Math.abs( a.x - b.x ) < 0.5 && Math.abs( a.y - b.y ) < 0.5;
 }
 
+// Avanza el ciclo scatter/chase un frame.
+function advanceMode( game ) {
+  const phase = SCATTER_CHASE[ game.modeIndex ];
+  game.modeTimer++;
+  if ( game.modeTimer >= phase.dur ) {
+    game.modeIndex++;
+    game.modeTimer = 0;
+    // Ultimo tramo (dur: Infinity) se queda en chase para siempre.
+    if ( game.modeIndex < SCATTER_CHASE.length ) {
+      game.mode = SCATTER_CHASE[ game.modeIndex ].mode;
+    }
+  }
+}
+
 function update( game ) {
+  advanceMode( game );
   movePacman( game );
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
