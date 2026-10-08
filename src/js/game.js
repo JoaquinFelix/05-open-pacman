@@ -13,6 +13,24 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 
+// Ciclo arcade simplificado de fases. dur en frames (requestAnimationFrame).
+const SCATTER_CHASE = [
+  { mode: 'scatter', dur: 420 },
+  { mode: 'chase',   dur: 1020 },
+  { mode: 'scatter', dur: 420 },
+  { mode: 'chase',   dur: 1020 },
+  { mode: 'scatter', dur: 300 },
+  { mode: 'chase',   dur: Infinity },
+];
+
+// Objetivos de scatter: esquina de cada fantasma.
+const SCATTER_TARGETS = {
+  blinky: { x: 25, y: 0 },  // superior derecha
+  pinky:  { x: 2,  y: 0 },  // superior izquierda
+  inky:   { x: 27, y: 30 }, // inferior derecha
+  clyde:  { x: 0,  y: 30 }, // inferior izquierda
+};
+
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
 function createGame() {
@@ -29,6 +47,10 @@ function createGame() {
     lives: 3,
     dotsRemaining: dots,
     grid,
+    // Fase scatter/chase: se controla con el ciclo SCATTER_CHASE en update().
+    mode: SCATTER_CHASE[ 0 ].mode,
+    modeIndex: 0,
+    modeTimer: 0,
     pacman: {
       x: PACMAN_START.x,
       y: PACMAN_START.y,
