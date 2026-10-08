@@ -1,6 +1,6 @@
 # SPEC 01 — Cuatro fantasmas con personalidades arcade
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** none
 > **Date:** 2026-10-08
 > **Objective:** Añadir cuatro fantasmas con comportamientos diferenciados al estilo arcade (Blinky, Pinky, Inky, Clyde), con fases scatter/chase, todos partiendo dentro del pen y usando decisiones por objetivo (no aleatorias).
@@ -74,18 +74,18 @@ Notas:
 
 ## Acceptance criteria
 
-- [ ] Existen exactamente 4 fantasmas con `kind` `blinky`, `pinky`, `inky`, `clyde`.
-- [ ] Todos los fantasmas nacen dentro del pen (`y === 14` y `x` entre 12-15).
-- [ ] `GHOST_COLORS` tiene 4 colores y se asigna a los 4 fantasmas.
-- [ ] El temporizador de fases `scatter/chase` avanza en `update()` y cambia `mode` al alcanzar `dur`.
-- [ ] `blinky` elige dirección hacia la posición redondeada de Pac-Man.
-- [ ] `pinky` elige dirección hacia ~4 celdas delante de Pac-Man según su dirección.
-- [ ] `inky` usa referencia a `blinky` y al punto 2 celdas delante para calcular su objetivo.
-- [ ] `clyde` cambia entre perseguir a Pac-Man o huir a su esquina según distancia Manhattan <= 8.
-- [ ] En callejón sin salida, permite giro de 180° (comportamiento existente preservado).
-- [ ] Túnel lateral sigue funcionando para todos los fantasmas.
-- [ ] Colisiones, vidas, victoria/derrota y conteo de dots siguen funcionando sin cambios visibles.
-- [ ] No se muta `MAZE` original durante la partida (se sigue copiando a `grid`).
+- [x] Existen exactamente 4 fantasmas con `kind` `blinky`, `pinky`, `inky`, `clyde`.
+- [x] Todos los fantasmas nacen dentro del pen (`y === 14` y `x` entre 12-15).
+- [x] `GHOST_COLORS` tiene 4 colores y se asigna a los 4 fantasmas.
+- [x] El temporizador de fases `scatter/chase` avanza en `update()` y cambia `mode` al alcanzar `dur`.
+- [x] `blinky` elige dirección hacia la posición redondeada de Pac-Man.
+- [x] `pinky` elige dirección hacia ~4 celdas delante de Pac-Man según su dirección.
+- [x] `inky` usa referencia a `blinky` y al punto 2 celdas delante para calcular su objetivo.
+- [x] `clyde` cambia entre perseguir a Pac-Man o huir a su esquina según distancia Manhattan <= 8.
+- [x] En callejón sin salida, permite giro de 180° (comportamiento existente preservado).
+- [x] Túnel lateral sigue funcionando para todos los fantasmas.
+- [x] Colisiones, vidas, victoria/derrota y conteo de dots siguen funcionando sin cambios visibles.
+- [x] No se muta `MAZE` original durante la partida (se sigue copiando a `grid`).
 
 ## Decisions taken and discarded
 
