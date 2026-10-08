@@ -132,6 +132,43 @@ function movePacman( game ) {
   wrapTunnel( p, width );
 }
 
+// Objetivo del fantasma segun su kind y la fase actual (scatter/chase).
+function targetFor( game, g ) {
+  const p = game.pacman;
+  const px = Math.round( p.x );
+  const py = Math.round( p.y );
+
+  if ( game.mode === 'scatter' ) return SCATTER_TARGETS[ g.kind ];
+
+  const d = DIRS[ p.dir ];
+
+  if ( g.kind === 'blinky' ) {
+    return { x: px, y: py };
+  }
+
+  if ( g.kind === 'pinky' ) {
+    // 4 celdas delante de Pacman en su direccion actual.
+    return { x: px + 4 * d.x, y: py + 4 * d.y };
+  }
+
+  if ( g.kind === 'inky' ) {
+    // Punto 2 celdas delante de Pacman; vector desde Blinky doblado.
+    const ax = px + 2 * d.x;
+    const ay = py + 2 * d.y;
+    const blinky = game.ghosts.find( ( gh ) => gh.kind === 'blinky' );
+    const bx = blinky ? Math.round( blinky.x ) : px;
+    const by = blinky ? Math.round( blinky.y ) : py;
+    return { x: ax + ( ax - bx ), y: ay + ( ay - by ) };
+  }
+
+  // clyde: persigue si esta lejos, si no vuelve a su esquina scatter.
+  const gx = Math.round( g.x );
+  const gy = Math.round( g.y );
+  const manhattan = Math.abs( gx - px ) + Math.abs( gy - py );
+  if ( manhattan > 8 ) return { x: px, y: py };
+  return SCATTER_TARGETS.clyde;
+}
+
 function decideGhost( game, g ) {
   const grid = game.grid;
   const p = game.pacman;
